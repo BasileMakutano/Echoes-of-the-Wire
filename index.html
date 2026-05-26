@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Python HTTP Server</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f0e8;
+      --paper: #fdfaf4;
+      --ink: #1a1a1a;
+      --muted: #6b6560;
+      --rule: #c8bfb0;
+      --accent: #2a4a7f;
+      --green: #1a5c2e;
+      --red: #7f1f1f;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      font-family: 'Courier Prime', 'Courier New', monospace;
+      color: var(--ink);
+    }
+
+    /* Subtle paper texture via repeating gradient */
+    body {
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 27px,
+          rgba(180,160,130,0.08) 28px
+        );
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px 80px;
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 720px;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.06),
+        0 4px 16px rgba(0,0,0,0.08),
+        inset 0 0 0 8px var(--paper);
+      padding: 52px 60px 60px;
+      position: relative;
+    }
+
+    /* Red margin line */
+    .sheet::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 72px;
+      border-left: 2px solid rgba(180, 60, 60, 0.25);
+    }
+
+    /* Hole punches */
+    .holes {
+      position: absolute;
+      left: -18px;
+      top: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      pointer-events: none;
+    }
+    .hole {
+      width: 18px; height: 18px;
+      background: var(--bg);
+      border: 1px solid var(--rule);
+      border-radius: 50%;
+    }
+
+    header {
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stamp {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+
+    h1 span {
+      color: var(--ink);
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 32px;
+      margin-top: 10px;
+    }
+
+    .meta-item {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    .meta-item strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    section {
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 6px;
+      margin-bottom: 14px;
+    }
+
+    p {
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--ink);
+    }
+
+    .status-block {
+      background: #f0ece4;
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--green);
+      padding: 14px 18px;
+      margin: 14px 0;
+      font-size: 13px;
+    }
+
+    .status-block .label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--green);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .dir-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .dir-table th {
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--rule);
+      padding: 6px 8px;
+    }
+
+    .dir-table td {
+      padding: 8px 8px;
+      border-bottom: 1px dashed var(--rule);
+      vertical-align: top;
+    }
+
+    .dir-table tr:last-child td { border-bottom: none; }
+
+    .dir-table .name {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .dir-table .size { color: var(--muted); }
+    .dir-table .date { color: var(--muted); font-size: 12px; }
+
+    .note {
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+      border-top: 1px dashed var(--rule);
+      padding-top: 14px;
+      margin-top: 8px;
+    }
+
+    .footer {
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 2px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .footer .sig {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    .footer .code {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* blinking cursor at end */
+    .cursor {
+      display: inline-block;
+      width: 8px; height: 13px;
+      background: var(--ink);
+      vertical-align: middle;
+      margin-left: 2px;
+      animation: blink 1.1s step-end infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sheet">
+    <div class="holes">
+      <div class="hole"></div>
+      <div class="hole"></div>
+      <div class="hole"></div>
+    </div>
+
+    <header>
+      <div class="stamp">SimpleHTTP/0.6 &mdash; Python/3.x</div>
+      <h1><span>HTTP</span> Server<span class="cursor"></span></h1>
+      <div class="meta-row">
+        <div class="meta-item">Port: <strong>8000</strong></div>
+        <div class="meta-item">Binding: <strong>0.0.0.0</strong></div>
+        <div class="meta-item">Protocol: <strong>HTTP/1.0</strong></div>
+      </div>
+    </header>
+
+    <section>
+      <h2>Status</h2>
+      <div class="status-block">
+        <span class="label">&#x25CF; Running</span>
+        Server is active and accepting connections on port 8000.
+        This is the default directory listing page.
+      </div>
+    </section>
+
+    <section>
+      <h2>Directory Listing &mdash; /</h2>
+      <table class="dir-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Size</th>
+            <th>Last Modified</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">index.html</td>
+            <td class="size">2.1 KB</td>
+            <td class="date">2025-04-11 09:14</td>
+          </tr>
+          <tr>
+            <td class="name">README.txt</td>
+            <td class="size">318 B</td>
+            <td class="date">2025-04-11 08:52</td>
+          </tr>
+          <tr>
+            <td class="name">logs/</td>
+            <td class="size">&mdash;</td>
+            <td class="date">2025-04-10 23:07</td>
+          </tr>
+          <tr>
+            <td class="name">backup.tar.gz</td>
+            <td class="size">14.3 MB</td>
+            <td class="date">2025-04-09 17:30</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">
+        Note: Directory browsing is enabled. Exercise caution with files
+        exposed on this endpoint.
+      </p>
+    </section>
+
+    <section>
+      <h2>Server Info</h2>
+      <p>
+        Serving HTTP on all interfaces. No authentication is configured.
+        All requests are logged to stdout. This service was started
+        manually and may contain files not intended for public access.
+      </p>
+    </section>
+
+    <div class="footer">
+      <div class="sig">Generated by SimpleHTTPServer &mdash; Python stdlib</div>
+      <div class="code">200 OK</div>
+    </div>
+
+  </div>
+
+</body>
+</html>
